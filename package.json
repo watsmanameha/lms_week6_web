@@ -1,0 +1,13 @@
+{
+  "name": "lms_week6_web",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "repository": "git@github.com:watsmanameha/lms_week6_web.git",
+  "author": "Eugene July <62775429+watsmanameha@users.noreply.github.com>",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0"
+  }
+}
