@@ -7,6 +7,7 @@
   "author": "Eugene July <62775429+watsmanameha@users.noreply.github.com>",
   "license": "MIT",
   "dependencies": {
+    "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "express": "^5.1.0"
   }
