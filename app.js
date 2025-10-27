@@ -5,7 +5,7 @@ export default function initApp(express, bodyParser, createReadStream, crypto, h
     if (!crypto || typeof crypto.createHash !== 'function') throw new TypeError('crypto is required');
     if (!http || typeof http.get !== 'function') throw new TypeError('http is required');
 
-    const LOGIN = 'edzhulaj';
+    const LOGIN = 'c23defe5-07d3-4de0-b01a-32c82d7fcfc1';
 
     const app = express();
     app.disable('x-powered-by');
