@@ -52,7 +52,7 @@ async function fetchUrlData(url) {
     }).on("error", reject);
   });
 }
-export function createApp(express, bodyParser, createReadStream, currentFilePath) {
+function createApp(express, bodyParser, createReadStream, currentFilePath) {
   const app = express();
 
   app.use(bodyParser.urlencoded({ extended: false }));
@@ -98,4 +98,4 @@ export function createApp(express, bodyParser, createReadStream, currentFilePath
   return app;
 }
 
-// module.exports = { createApp, SYSTEM_LOGIN };
+module.exports = { createApp, SYSTEM_LOGIN };
