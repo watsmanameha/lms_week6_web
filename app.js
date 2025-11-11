@@ -142,6 +142,11 @@ export default function (express, bodyParser, createReadStream, crypto, http, mo
   // Check if using WordPress.com public API
   const isWordPressCom = wordpressUrl.includes('public-api.wordpress.com');
 
+  // Handle root /wordpress/ request - redirect to wp-json
+  app.get("/wordpress/", (_req, res) => {
+    res.redirect(301, "/wordpress/wp-json/");
+  });
+
   if (isWordPressCom) {
     // For WordPress.com, extract the base URL and site slug
     // Format: https://public-api.wordpress.com/wp/v2/sites/SITE_NAME
@@ -157,15 +162,23 @@ export default function (express, bodyParser, createReadStream, crypto, http, mo
           // Transform /wordpress/wp-json/wp/v2/posts/1
           // to /wp/v2/sites/SITE_NAME/posts/REAL_POST_ID
           let newPath = path
+            .replace(/^\/wordpress\/wp-json\/wp\/v2/, '')
             .replace(/^\/wordpress\/wp-json/, '')
             .replace(/^\/wordpress/, '');
 
           // If requesting post with ID 1, redirect to actual post ID
           newPath = newPath.replace(/\/posts\/1(\/|$)/, `/posts/${realPostId}$1`);
 
-          return `/wp/v2/sites/${siteName}${newPath}`;
+          const finalPath = `/wp/v2/sites/${siteName}${newPath}`;
+          console.log(`[WordPress Proxy] ${path} -> ${finalPath}`);
+          return finalPath;
+        },
+        onProxyRes: (proxyRes) => {
+          // Log response for debugging
+          console.log(`[WordPress Proxy Response] Status: ${proxyRes.statusCode}`);
         },
         onError: (err, _req, res) => {
+          console.error(`[WordPress Proxy Error] ${err.message}`);
           res.status(500).send(`Proxy error: ${err.message}`);
         }
       }));
