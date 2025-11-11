@@ -2,7 +2,6 @@
   "name": "lms_week6_web",
   "version": "1.0.0",
   "description": "",
-  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -14,12 +13,13 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/watsmanameha/lms_week6_web/issues"
   },
   "homepage": "https://github.com/watsmanameha/lms_week6_web#readme",
   "dependencies": {
-    "body-parser": "^2.2.0",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "body-parser": "^1.20.2"
   }
 }
