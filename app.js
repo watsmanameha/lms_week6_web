@@ -1,4 +1,4 @@
-export default function (express, bodyParser, createReadStream, crypto, http) {
+export default function (express, bodyParser, createReadStream, crypto, http, mongoose) {
   const app = express();
 
   const CORS_HEADERS = {
@@ -12,6 +12,11 @@ export default function (express, bodyParser, createReadStream, crypto, http) {
   };
 
   const SYSTEM_LOGIN = "c23defe5-07d3-4de0-b01a-32c82d7fcfc1";
+
+  const userSchema = new mongoose.Schema({
+    login: String,
+    password: String
+  });
 
   app.use(bodyParser.urlencoded({ extended: false }));
   app.use(bodyParser.json());
@@ -72,6 +77,32 @@ export default function (express, bodyParser, createReadStream, crypto, http) {
       response.on("error", () => res.status(500).end());
       response.pipe(res);
     });
+  });
+
+  app.post("/insert/", async (req, res) => {
+    try {
+      const { login, password, URL } = req.body;
+
+      if (!login || !password || !URL) {
+        return res.status(400).send("login, password and URL parameters required");
+      }
+
+      const connection = await mongoose.createConnection(URL, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true
+      });
+
+      const User = connection.model('User', userSchema, 'users');
+
+      const user = new User({ login, password });
+      await user.save();
+
+      res.set(TEXT_PLAIN_HEADER).send("User inserted successfully");
+
+      await connection.close();
+    } catch (err) {
+      res.status(500).send(String(err));
+    }
   });
 
   app.use((_req, res) => {

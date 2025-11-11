@@ -19,7 +19,8 @@
   },
   "homepage": "https://github.com/watsmanameha/lms_week6_web#readme",
   "dependencies": {
+    "body-parser": "^1.20.2",
     "express": "^5.1.0",
-    "body-parser": "^1.20.2"
+    "mongoose": "^5.8.11"
   }
 }
