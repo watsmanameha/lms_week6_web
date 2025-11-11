@@ -137,31 +137,43 @@ export default function (express, bodyParser, createReadStream, crypto, http, mo
     });
   });
 
-  const wordpressTarget = process.env.WORDPRESS_URL || "http://localhost:8080";
+  const wordpressUrl = process.env.WORDPRESS_URL || "http://localhost:8080";
 
   // Check if using WordPress.com public API
-  const isWordPressCom = wordpressTarget.includes('public-api.wordpress.com');
+  const isWordPressCom = wordpressUrl.includes('public-api.wordpress.com');
 
   if (isWordPressCom) {
-    // For WordPress.com, we need to proxy directly without path rewrite
-    app.use("/wordpress", httpProxy({
-      target: wordpressTarget,
-      changeOrigin: true,
-      pathRewrite: (path) => {
-        // Remove /wordpress prefix and append to the target URL
-        return path.replace(/^\/wordpress/, '');
-      },
-      onProxyReq: (proxyReq) => {
-        proxyReq.setHeader("X-Forwarded-Prefix", "/wordpress");
-      },
-      onError: (err, _req, res) => {
-        res.status(500).send(`Proxy error: ${err.message}`);
-      }
-    }));
+    // For WordPress.com, extract the base URL and site slug
+    // Format: https://public-api.wordpress.com/wp/v2/sites/SITE_NAME
+    const match = wordpressUrl.match(/https:\/\/public-api\.wordpress\.com\/wp\/v2\/sites\/([^\/]+)/);
+    if (match) {
+      const siteName = match[1];
+      const realPostId = process.env.WORDPRESS_POST_ID || "3";
+
+      app.use("/wordpress", httpProxy({
+        target: "https://public-api.wordpress.com",
+        changeOrigin: true,
+        pathRewrite: (path) => {
+          // Transform /wordpress/wp-json/wp/v2/posts/1
+          // to /wp/v2/sites/SITE_NAME/posts/REAL_POST_ID
+          let newPath = path
+            .replace(/^\/wordpress\/wp-json/, '')
+            .replace(/^\/wordpress/, '');
+
+          // If requesting post with ID 1, redirect to actual post ID
+          newPath = newPath.replace(/\/posts\/1(\/|$)/, `/posts/${realPostId}$1`);
+
+          return `/wp/v2/sites/${siteName}${newPath}`;
+        },
+        onError: (err, _req, res) => {
+          res.status(500).send(`Proxy error: ${err.message}`);
+        }
+      }));
+    }
   } else {
     // For self-hosted WordPress
     app.use("/wordpress", httpProxy({
-      target: wordpressTarget,
+      target: wordpressUrl,
       changeOrigin: true,
       pathRewrite: {
         "^/wordpress": ""
