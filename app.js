@@ -139,46 +139,38 @@ export default function (express, bodyParser, createReadStream, crypto, http, mo
 
   const wordpressUrl = process.env.WORDPRESS_URL || "http://localhost:8080";
 
-  // Check if using WordPress.com public API
-  const isWordPressCom = wordpressUrl.includes('public-api.wordpress.com');
-
-  // Handle root /wordpress/ request - redirect to wp-json
-  app.get("/wordpress/", (_req, res) => {
-    res.redirect(301, "/wordpress/wp-json/");
-  });
+  // Check if using WordPress.com
+  const isWordPressCom = wordpressUrl.includes('wordpress.com');
 
   if (isWordPressCom) {
-    // For WordPress.com, extract the base URL and site slug
-    // Format: https://public-api.wordpress.com/wp/v2/sites/SITE_NAME
-    const match = wordpressUrl.match(/https:\/\/public-api\.wordpress\.com\/wp\/v2\/sites\/([^\/]+)/);
-    if (match) {
-      const siteName = match[1];
-      const realPostId = process.env.WORDPRESS_POST_ID || "3";
+    // For WordPress.com sites, we need special handling
+    // Extract site name from URL like https://edzhulaj.wordpress.com
+    const siteMatch = wordpressUrl.match(/https?:\/\/([^.]+)\.wordpress\.com/);
+    if (siteMatch) {
+      const siteName = siteMatch[1];
+      const wpcomSiteUrl = `https://${siteName}.wordpress.com`;
+      const realPostId = process.env.WORDPRESS_POST_ID || "7";
 
       app.use("/wordpress", httpProxy({
-        target: "https://public-api.wordpress.com",
+        target: wpcomSiteUrl,
         changeOrigin: true,
         pathRewrite: (path) => {
-          // Transform /wordpress/wp-json/wp/v2/posts/1
-          // to /wp/v2/sites/SITE_NAME/posts/REAL_POST_ID
-          let newPath = path
-            .replace(/^\/wordpress\/wp-json\/wp\/v2/, '')
-            .replace(/^\/wordpress\/wp-json/, '')
-            .replace(/^\/wordpress/, '');
-
-          // If requesting post with ID 1, redirect to actual post ID
-          newPath = newPath.replace(/\/posts\/1(\/|$)/, `/posts/${realPostId}$1`);
-
-          const finalPath = `/wp/v2/sites/${siteName}${newPath}`;
-          console.log(`[WordPress Proxy] ${path} -> ${finalPath}`);
-          return finalPath;
+          // Map post ID 1 to actual post ID
+          if (path.includes('/posts/1')) {
+            const newPath = path.replace(/\/posts\/1(\/|$|\?)/, `/posts/${realPostId}$1`);
+            console.log(`[WordPress.com Proxy] Mapping ID: ${path} -> ${newPath}`);
+            return newPath.replace(/^\/wordpress/, '');
+          }
+          return path.replace(/^\/wordpress/, '');
         },
-        onProxyRes: (proxyRes) => {
-          // Log response for debugging
-          console.log(`[WordPress Proxy Response] Status: ${proxyRes.statusCode}`);
+        onProxyReq: (_proxyReq, req) => {
+          console.log(`[WordPress.com Proxy] ${req.method} ${req.path}`);
         },
-        onError: (err, _req, res) => {
-          console.error(`[WordPress Proxy Error] ${err.message}`);
+        onProxyRes: (proxyRes, req) => {
+          console.log(`[WordPress.com Proxy Response] ${req.path} -> Status: ${proxyRes.statusCode}`);
+        },
+        onError: (err, req, res) => {
+          console.error(`[WordPress.com Proxy Error] ${req.path}: ${err.message}`);
           res.status(500).send(`Proxy error: ${err.message}`);
         }
       }));
