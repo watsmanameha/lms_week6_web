@@ -1,4 +1,4 @@
-export default function (express, bodyParser, createReadStream, crypto, http, mongoose, pug, httpProxy) {
+export default function (express, bodyParser, createReadStream, crypto, http, mongoose, pug, httpProxy, puppeteer) {
   const app = express();
 
   const CORS_HEADERS = {
@@ -135,6 +135,45 @@ export default function (express, bodyParser, createReadStream, crypto, http, mo
         res.status(500).send(String(error));
       });
     });
+  });
+
+  app.get("/test/", async (req, res) => {
+    const url = req.query.URL;
+
+    if (!url) {
+      return res.status(400).send("URL query parameter required");
+    }
+
+    let browser;
+    try {
+      // Launch headless browser
+      browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+
+      const page = await browser.newPage();
+
+      // Navigate to the URL
+      await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+
+      // Click the button with id 'bt'
+      await page.click('#bt');
+
+      // Wait a bit for the value to appear
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Get the value from input field with id 'inp'
+      const value = await page.$eval('#inp', el => el.value);
+
+      res.set(TEXT_PLAIN_HEADER).send(value);
+    } catch (error) {
+      res.status(500).send(`Error: ${error.message}`);
+    } finally {
+      if (browser) {
+        await browser.close();
+      }
+    }
   });
 
   const wordpressUrl = process.env.WORDPRESS_URL || "http://localhost:8080";

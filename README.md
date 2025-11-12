@@ -99,6 +99,24 @@ curl https://your-app.onrender.com/sha1/hello/
 ### 7. `/req/` (GET/POST)
 Делает HTTP-запрос по указанному адресу и возвращает ответ.
 
+### 8. `/test/` (GET)
+Использует headless browser (Puppeteer) для автоматизации веб-страницы.
+
+**Параметры:**
+- Query: `URL` - URL страницы с кнопкой и полем ввода
+
+**Логика:**
+1. Открывает страницу в headless браузере
+2. Кликает на кнопку с id `bt`
+3. Читает значение из поля ввода с id `inp`
+4. Возвращает значение как текст
+
+**Пример:**
+```bash
+curl 'https://your-app.onrender.com/test/?URL=https://kodaktor.ru/g/80b5cdf'
+# Ответ: число из поля ввода
+```
+
 ## Деплой
 
 ### Render.com (основное приложение)
@@ -121,6 +139,7 @@ curl https://your-app.onrender.com/sha1/hello/
 - **mongoose** ^5.8.11 - работа с MongoDB
 - **pug** ^3.0.3 - рендеринг шаблонов
 - **http-proxy-middleware** ^3.0.5 - проксирование запросов
+- **puppeteer** - headless browser для автоматизации веб-страниц
 
 ## Как это работает
 
