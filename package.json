@@ -23,6 +23,7 @@
     "express": "^5.1.0",
     "http-proxy-middleware": "^3.0.5",
     "mongoose": "^5.8.11",
+    "pngjs": "^7.0.0",
     "pug": "^3.0.3",
     "puppeteer": "^24.29.1"
   }

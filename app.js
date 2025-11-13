@@ -1,4 +1,4 @@
-export default function (express, bodyParser, createReadStream, crypto, http, mongoose, pug, httpProxy, puppeteer) {
+export default function (express, bodyParser, createReadStream, crypto, http, mongoose, pug, httpProxy, puppeteer, PNG) {
   const app = express();
 
   const CORS_HEADERS = {
@@ -11,7 +11,7 @@ export default function (express, bodyParser, createReadStream, crypto, http, mo
     "Content-Type": "text/plain; charset=utf-8",
   };
 
-  const SYSTEM_LOGIN = "c23defe5-07d3-4de0-b01a-32c82d7fcfc1";
+  const SYSTEM_LOGIN = "edzhulaj";
 
   const userSchema = new mongoose.Schema({
     login: String,
@@ -149,7 +149,14 @@ export default function (express, bodyParser, createReadStream, crypto, http, mo
       // Launch headless browser
       browser = await puppeteer.launch({
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || puppeteer.executablePath(),
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--disable-gpu'
+        ]
       });
 
       const page = await browser.newPage();
@@ -174,6 +181,33 @@ export default function (express, bodyParser, createReadStream, crypto, http, mo
         await browser.close();
       }
     }
+  });
+
+  // Route: /makeimage - Generate PNG image with specified dimensions
+  app.get("/makeimage", (req, res) => {
+    const width = parseInt(req.query.width) || 100;
+    const height = parseInt(req.query.height) || 100;
+
+    if (width <= 0 || height <= 0 || width > 10000 || height > 10000) {
+      return res.status(400).send("Invalid dimensions");
+    }
+
+    const png = new PNG({ width, height });
+
+    // Fill with a simple pattern (optional - creates a checkerboard)
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = (width * y + x) << 2;
+        const color = ((x + y) % 2) * 255;
+        png.data[idx] = color;     // R
+        png.data[idx + 1] = color; // G
+        png.data[idx + 2] = color; // B
+        png.data[idx + 3] = 255;   // A
+      }
+    }
+
+    res.setHeader('Content-Type', 'image/png');
+    png.pack().pipe(res);
   });
 
   const wordpressUrl = process.env.WORDPRESS_URL || "http://localhost:8080";
