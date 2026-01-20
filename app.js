@@ -265,6 +265,76 @@ export default function (express, bodyParser, createReadStream, crypto, http, mo
     }));
   }
 
+  // Translate endpoint using Puppeteer and dict.com
+  app.get("/translate/", async (req, res) => {
+    const word = req.query.word;
+
+    if (!word) {
+      return res.status(400).send("word query parameter required");
+    }
+
+    let browser;
+    try {
+      browser = await puppeteer.launch({
+        headless: true,
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || puppeteer.executablePath(),
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--disable-gpu'
+        ]
+      });
+
+      const page = await browser.newPage();
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+
+      // Use Glosbe for translation (Russian to English)
+      const url = `https://glosbe.com/ru/en/${encodeURIComponent(word)}`;
+
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+      // Wait for page to load
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Get the first translation
+      const translation = await page.evaluate(() => {
+        // Look for h3 elements which contain the main translations
+        const h3s = document.querySelectorAll('h3');
+        for (const h3 of h3s) {
+          const text = h3.textContent?.trim();
+          // First h3 with comma-separated translations
+          if (text && text.includes(',')) {
+            // Return just the first word before comma
+            return text.split(',')[0].trim();
+          }
+        }
+        // Fallback: look for strong elements
+        const strongs = document.querySelectorAll('strong');
+        for (const strong of strongs) {
+          const text = strong.textContent?.trim();
+          if (text && text.length > 0 && text.length < 30 && /^[a-zA-Z]/.test(text)) {
+            return text;
+          }
+        }
+        return '';
+      });
+
+      res.set(TEXT_PLAIN_HEADER).send(translation || '');
+    } catch (error) {
+      res.status(500).send(`Error: ${error.message}`);
+    } finally {
+      if (browser) {
+        await browser.close();
+      }
+    }
+  });
+
+  // Serve static files from public directory
+  const currentDir = new URL('.', import.meta.url).pathname;
+  app.use(express.static(currentDir + 'public'));
+
   app.use((_req, res) => {
     res.set(TEXT_PLAIN_HEADER).send(SYSTEM_LOGIN);
   });

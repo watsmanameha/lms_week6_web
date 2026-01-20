@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>edzhulaj</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        input {
+            padding: 15px;
+            font-size: 18px;
+            width: 300px;
+            border: 2px solid #333;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: #333;
+            font-size: 32px;
+            min-height: 40px;
+        }
+    </style>
+</head>
+<body>
+    <input type="text" id="wordInput" placeholder="Enter Russian word">
+    <h1 id="translation"></h1>
+
+    <script>
+        const input = document.getElementById('wordInput');
+        const translation = document.getElementById('translation');
+        let debounceTimer;
+
+        input.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            const word = this.value.trim();
+
+            if (!word) {
+                translation.textContent = '';
+                return;
+            }
+
+            debounceTimer = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/translate/?word=${encodeURIComponent(word)}`);
+                    const result = await response.text();
+                    translation.textContent = result;
+                } catch (error) {
+                    translation.textContent = 'Error';
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>
