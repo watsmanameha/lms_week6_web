@@ -38,15 +38,13 @@ export default function (express, bodyParser, createReadStream, crypto, http, mo
 <input type="text" id="inp">
 <h1 id="out"></h1>
 <script>
-document.getElementById('inp').addEventListener('input', async function() {
-  const word = this.value.trim();
-  if (!word) {
-    document.getElementById('out').textContent = '';
-    return;
-  }
-  const res = await fetch('/?word=' + encodeURIComponent(word));
-  document.getElementById('out').textContent = await res.text();
-});
+const inp = document.getElementById('inp');
+const out = document.getElementById('out');
+inp.oninput = async function() {
+  const w = this.value.trim();
+  if (!w) { out.textContent = ''; return; }
+  out.textContent = await (await fetch('/?word=' + encodeURIComponent(w))).text();
+};
 </script>
 </body>
 </html>`;
